@@ -19,9 +19,7 @@ update_badge_codeberg:
 
   script:
     # load ssh key
-    - chmod 400 "$SSH_KEY"
-    - mkdir ~/.ssh
-    - cat "$SSH_KEY" | base64 -d > ~/.ssh/gitlab-cicd
+    - echo "$SSH_KEY" | base64 -d > ~/.ssh/gitlab-cicd
     - chmod 400 ~/.ssh/gitlab-cicd
     - eval "$(ssh-agent -s)"
     - ssh-add ~/.ssh/gitlab-cicd
