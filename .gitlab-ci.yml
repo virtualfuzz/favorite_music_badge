@@ -31,7 +31,7 @@ update_badge_codeberg:
     - git config --global user.name "$GIT_BOT_USERNAME"
 
     # install go
-    - curl https://go.dev/dl/go1.24.5.linux-amd64.tar.gz -x go1.24.5.linux-amd64.tar.gz
+    - curl https://dl.google.com/go/go1.24.5.linux-amd64.tar.gz -o go1.24.5.linux-amd64.tar.gz
     - tar -C /usr/local -xzf go1.24.5.linux-amd64.tar.gz
     - export PATH=$PATH:/usr/local/go/bin
 
