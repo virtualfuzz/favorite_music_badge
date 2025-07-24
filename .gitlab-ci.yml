@@ -37,7 +37,7 @@ update_badge_codeberg:
     # install chromium
     - git clone https://github.com/scheib/chromium-latest-linux.git
     - chromium-latest-linux/update.sh
-    - export PATH=$PATH:/usr/local/go/bin:~/go/bin:~/chromium-latest-linux/latest
+    - export PATH=$PATH:/usr/local/go/bin:~/go/bin:./chromium-latest-linux/latest
 
     # get go program
     - go install codeberg.org/virtualfuzz/favorite_music_badge@v0.0.1
