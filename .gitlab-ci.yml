@@ -33,7 +33,11 @@ update_badge_codeberg:
     # install go
     - curl https://dl.google.com/go/go1.24.5.linux-amd64.tar.gz -o go1.24.5.linux-amd64.tar.gz
     - tar -C /usr/local -xzf go1.24.5.linux-amd64.tar.gz
-    - export PATH=$PATH:/usr/local/go/bin:~/go/bin
+
+    # install chromium
+    - git clone https://github.com/scheib/chromium-latest-linux.git
+    - chromium-latest-linux/update.sh
+    - export PATH=$PATH:/usr/local/go/bin:~/go/bin:~/chromium-latest-linux/latest
 
     # get go program
     - go install codeberg.org/virtualfuzz/favorite_music_badge@v0.0.1
