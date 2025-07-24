@@ -33,7 +33,7 @@ update_badge_codeberg:
     # install go
     - curl https://dl.google.com/go/go1.24.5.linux-amd64.tar.gz -o go1.24.5.linux-amd64.tar.gz
     - tar -C /usr/local -xzf go1.24.5.linux-amd64.tar.gz
-    - export PATH=$PATH:/usr/local/go/bin
+    - export PATH=$PATH:/usr/local/go/bin:~/go/bin
 
     # get go program
     - go install codeberg.org/virtualfuzz/favorite_music_badge@v0.0.1
