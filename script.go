@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -15,6 +17,7 @@ import (
 
 // Timeout for scraping the favorite music
 const VERSION = "v0.0.1"
+const REPOSITORY_DIR = "./repository_to_modify/"
 
 type ScraperState uint8
 
@@ -25,7 +28,7 @@ const (
 )
 
 func main() {
-	channel_id, user_agent, timeout, message_color, style, logo, logoColor, logoSize, labelColor, color, cacheSeconds, err := parseCommandLineArgs()
+	channel_id, user_agent, timeout, message_color, style, logo, logoColor, logoSize, labelColor, color, cacheSeconds, repository, filename, err := parseCommandLineArgs()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,14 +36,115 @@ func main() {
 	// Fetch the favorite music
 	fmt.Println("Please make sure that \"Enable public stats\" is enabled in your youtube music channel settings.")
 	fmt.Printf("Currently fetching the favorite music, this might take a bit long... (Timeout of %v)\n", timeout)
-	name, link, author, err := GetFavoriteFromChannelId(channel_id, *user_agent, timeout)
+	name, video_link, author, err := GetFavoriteFromChannelId(channel_id, *user_agent, timeout)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Create a link of it as an image
-	fmt.Printf("Favorite music: %v by %v (%v)\n", name, author, link)
-	fmt.Println(Generate_image_link(name, author, *message_color, *style, *logo, *logoColor, *logoSize, *labelColor, *color, *cacheSeconds))
+	image_link := Generate_image_link(name, author, *message_color, *style, *logo, *logoColor, *logoSize, *labelColor, *color, *cacheSeconds)
+	fmt.Printf("Favorite music: %v by %v (%v)\n", name, author, video_link)
+	fmt.Println(image_link)
+
+	if *repository != "" {
+		// Clone the repository
+		clone := exec.Command("git", "clone", *repository, REPOSITORY_DIR)
+		clone.Stderr = os.Stderr
+
+		output, err := clone.Output()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(string(output))
+
+		// Search the file and add the youtube music badge
+		file, err := os.Open(REPOSITORY_DIR + *filename)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+
+		var lines []string
+
+		// Did we add a music badge at least once?
+		added_youtube_music_badge := false
+
+		// Should we add a youtube music badge now
+		add_youtube_music_badge := false
+		for scanner.Scan() {
+			line := scanner.Text()
+
+			if add_youtube_music_badge {
+				add_youtube_music_badge = false
+				added_youtube_music_badge = true
+				line = fmt.Sprintf("[<img src=\"%v\"/>](%v)", image_link, video_link)
+			} else if strings.Contains(line, "FAVORITE_MUSIC_BADGE_AFTER_THIS_LINE") {
+				add_youtube_music_badge = true
+			}
+
+
+			lines = append(lines, line)
+		}
+
+		if add_youtube_music_badge {
+			add_youtube_music_badge = false
+			added_youtube_music_badge = true
+			lines = append(lines, fmt.Sprintf("[<img src=\"%v\"/>](%v)", image_link, video_link))
+		}
+
+		if added_youtube_music_badge == false {
+			log.Fatal("Tried to add a favorite music badge without a FAVORITE_MUSIC_BADGE_AFTER_THIS_LINE inside of the readme")
+		}
+
+		if err := scanner.Err(); err != nil {
+			log.Fatal(err)
+		}
+
+		// Overwrite the existing file
+		outputFile, err := os.Create(REPOSITORY_DIR + *filename)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer outputFile.Close()
+
+		writer := bufio.NewWriter(outputFile)
+		for _, line := range lines {
+			_, err := writer.WriteString(line + "\n")
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+		writer.Flush()
+
+		// Try to do a git add the modified file
+		add := exec.Command("git", "--git-dir", REPOSITORY_DIR + ".git", "--work-tree", REPOSITORY_DIR, "add", *filename)
+		add.Stderr = os.Stderr
+		output, err = add.Output()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(string(output))
+
+		// Create a git commit
+		commit := exec.Command("git", "--git-dir", REPOSITORY_DIR + ".git", "--work-tree", REPOSITORY_DIR, "commit", "-m", "feat: updated favorite_music_badge")
+		commit.Stderr = os.Stderr
+		output, err = commit.Output()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(string(output))
+
+		// Git push the commit
+		push := exec.Command("git", "--git-dir", REPOSITORY_DIR + ".git", "--work-tree", REPOSITORY_DIR, "push")
+		push.Stderr = os.Stderr
+		output, err = push.Output()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(string(output))
+	}
 }
 
 // Transform an string to make it safe within URL's
@@ -93,7 +197,7 @@ func Generate_image_link(name string, author string, message_color string, style
 // Parse command line arguments and the flags
 //
 // Exits out automatically if the help flag is given or if we have an invalid amount of arguments passed
-func parseCommandLineArgs() (channel_id string, user_agent *string, timeout time.Duration, message_color *string, style *string, logo *string, logoColor *string, logoSize *string, labelColor *string, color *string, cacheSeconds *string, err error) {
+func parseCommandLineArgs() (channel_id string, user_agent *string, timeout time.Duration, message_color *string, style *string, logo *string, logoColor *string, logoSize *string, labelColor *string, color *string, cacheSeconds *string, repository *string, filename *string, err error) {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] CHANNEL_ID\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "Version: %s\n", VERSION)
@@ -112,10 +216,18 @@ func parseCommandLineArgs() (channel_id string, user_agent *string, timeout time
 	labelColor = flag.String("label-color", "darkred", "labelColor passed to shields.io while generating the markdown badge (documentation at https://shields.io/badges)")
 	color = flag.String("color", "", "color passed to shields.io while generating the markdown badge (documentation at https://shields.io/badges)")
 	cacheSeconds = flag.String("cacheSeconds", "", "cacheSeconds passed to shields.io while generating the markdown badge (documentation at https://shields.io/badges)")
+	repository = flag.String("repository", "", "repository to clone and update with the new favorite music badge. -file must also be added")
+	filename = flag.String("filename", "", "file where we add the new favorite music badge. -repository must also be added.")
 
 	help := flag.Bool("help", false, "Display help information")
 	helpShort := flag.Bool("h", false, "Display help information")
 	flag.Parse()
+
+	if (*filename != "" && *repository == "") || (*filename == "" && *repository != "") {
+		log.Print("If the file flag is given, the repository flag must also be added, and vice-versa.")
+		flag.Usage()
+		os.Exit(64)
+	}
 
 	// Convert the timeout to an actual timeout and return an error on failure
 	timeout, err = time.ParseDuration(*timeout_flag)
