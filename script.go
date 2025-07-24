@@ -16,7 +16,7 @@ import (
 )
 
 // Timeout for scraping the favorite music
-const VERSION = "v0.0.1"
+const VERSION = "v0.1.0"
 const REPOSITORY_DIR = "./repository_to_modify/"
 
 type ScraperState uint8
