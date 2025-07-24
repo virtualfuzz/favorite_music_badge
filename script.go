@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/chromedp/chromedp"
@@ -24,11 +25,12 @@ const (
 )
 
 func main() {
-	channel_id, user_agent, timeout, err := parseCommandLineArgs()
+	channel_id, user_agent, timeout, message_color, style, logo, logoColor, logoSize, labelColor, color, cacheSeconds, err := parseCommandLineArgs()
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// Fetch the favorite music
 	fmt.Println("Please make sure that \"Enable public stats\" is enabled in your youtube music channel settings.")
 	fmt.Printf("Currently fetching the favorite music, this might take a bit long... (Timeout of %v)\n", timeout)
 	name, link, author, err := GetFavoriteFromChannelId(channel_id, *user_agent, timeout)
@@ -36,11 +38,62 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(name, link, author)
+	// Create a link of it as an image
+	fmt.Printf("Favorite music: %v by %v (%v)\n", name, author, link)
+	fmt.Println(Generate_image_link(name, author, *message_color, *style, *logo, *logoColor, *logoSize, *labelColor, *color, *cacheSeconds))
+}
+
+// Transform an string to make it safe within URL's
+func safeUrl(str string) string {
+	str = strings.ReplaceAll(str, "?", "%3F")
+	str = strings.ReplaceAll(str, "\"", "%22")
+	str = strings.ReplaceAll(str, " ", "%20")
+	str = strings.ReplaceAll(str, "&", "%26")
+	str = strings.ReplaceAll(str, "=", "%3D")
+	str = strings.ReplaceAll(str, "\\", "%5C")
+	return str
+}
+
+// Generate an image link from a name and a author
+// style, logo, logoColor, logoSize, labelColor, color, and cacheSeconds are all optional
+// and will be omitted if they are set to the empty string, they are added directly to the badge creator
+// and are the same as in https://shields.io/badges
+//
+// message_color is special, if it is empty, it will be set to mistyrose
+func Generate_image_link(name string, author string, message_color string, style string, logo string, logoColor string, logoSize string, labelColor string, color string, cacheSeconds string) (link string) {
+	name = safeUrl(name)
+	author = safeUrl(author)
+	if message_color == "" {
+		message_color = "mistyrose"
+	}
+	if style != "" {
+		style = fmt.Sprintf("style=%v&", style)
+	}
+	if logo != "" {
+		logo = fmt.Sprintf("logo=%v&", logo)
+	}
+	if logoColor != "" {
+		logoColor = fmt.Sprintf("logoColor=%v&", logoColor)
+	}
+	if logoSize != "" {
+		logoSize = fmt.Sprintf("logoSize=%v&", logoSize)
+	}
+	if labelColor != "" {
+		labelColor = fmt.Sprintf("labelColor=%v&", labelColor)
+	}
+	if color != "" {
+		color = fmt.Sprintf("color=%v&", color)
+	}
+	if cacheSeconds != "" {
+		cacheSeconds = fmt.Sprintf("cacheSeconds=%v&", cacheSeconds)
+	}
+	return fmt.Sprintf("https://img.shields.io/badge/Favorite%%20music-%v%%20by%%20%v-%v?%v%v%v%v%v%v%v", name, author, message_color, style, logo, logoColor, logoSize, labelColor, color, cacheSeconds)
 }
 
 // Parse command line arguments and the flags
-func parseCommandLineArgs() (channel_id string, user_agent *string, timeout time.Duration, err error) {
+//
+// Exits out automatically if the help flag is given or if we have an invalid amount of arguments passed
+func parseCommandLineArgs() (channel_id string, user_agent *string, timeout time.Duration, message_color *string, style *string, logo *string, logoColor *string, logoSize *string, labelColor *string, color *string, cacheSeconds *string, err error) {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] CHANNEL_ID\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "Version: %s\n", VERSION)
@@ -51,6 +104,15 @@ func parseCommandLineArgs() (channel_id string, user_agent *string, timeout time
 	// Set up the possible flags and arguments that can be passed
 	user_agent = flag.String("user-agent", "Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0", "User agent used while fetching the favorite music. Do not modify this if it already works.")
 	timeout_flag := flag.String("timeout", "60s", "Timeout before we stop trying to fetch the favorite music.")
+	message_color = flag.String("message-color", "mistyrose", "messageColor passed to shields.io while generating the markdown badge (documentation at https://shields.io/badges)")
+	style = flag.String("style", "for-the-badge", "style passed to shields.io while generating the markdown badge (documentation at https://shields.io/badges)")
+	logo = flag.String("logo", "youtube-music", "This is not a filename. logo passed to shields.io while generating the markdown badge (documentation at https://shields.io/badges)")
+	logoColor = flag.String("logo-color", "", "logoColor passed to shields.io while generating the markdown badge (documentation at https://shields.io/badges). Empty means we don't pass it.")
+	logoSize = flag.String("logo-size", "", "logoSize passed to shields.io while generating the markdown badge (documentation at https://shields.io/badges)")
+	labelColor = flag.String("label-color", "darkred", "labelColor passed to shields.io while generating the markdown badge (documentation at https://shields.io/badges)")
+	color = flag.String("color", "", "color passed to shields.io while generating the markdown badge (documentation at https://shields.io/badges)")
+	cacheSeconds = flag.String("cacheSeconds", "", "cacheSeconds passed to shields.io while generating the markdown badge (documentation at https://shields.io/badges)")
+
 	help := flag.Bool("help", false, "Display help information")
 	helpShort := flag.Bool("h", false, "Display help information")
 	flag.Parse()
@@ -64,7 +126,7 @@ func parseCommandLineArgs() (channel_id string, user_agent *string, timeout time
 
 	if *help || *helpShort {
 		flag.Usage()
-		return
+		os.Exit(0)
 	}
 
 	// Get the channel id from the args
