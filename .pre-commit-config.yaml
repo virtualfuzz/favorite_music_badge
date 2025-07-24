@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+repos:
+  - repo: local
+    hooks:
+      - id: dprint
+        name: Format all files using dprint
+        entry: dprint fmt --allow-no-files
+        language: node # Not really using node, but otherwise it fails
+        additional_dependencies: ["dprint"]
+  - repo: local
+    hooks:
+      - id: dprint
+        name: Check for dprint plugin updates
+        entry: dprint config update
+        pass_filenames: false
+        language: node # Not really using node, but otherwise it fails
+        additional_dependencies: ["dprint"]
+  - repo: https://github.com/adhtruong/mirrors-typos
+    rev: v1.34.0
+    hooks:
+      - id: typos
+        name: Check for typos in all files
+  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+    rev: v9.22.0
+    hooks:
+      - id: commitlint
+        name: Validate that commit messages follow conventional commits
+        stages: [commit-msg]
+        additional_dependencies: ["@commitlint/config-conventional"]
+  - repo: https://github.com/boidolr/pre-commit-images
+    rev: v1.9.0
+    hooks:
+      - id: optimize-avif
+        args: [--effort=0]
+      - id: optimize-jpg
+      - id: optimize-png
+      - id: optimize-svg
+      - id: optimize-webp
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.28.0
+    hooks:
+      - id: gitleaks
+  - repo: https://gitlab.com/vojko.pribudic.foss/pre-commit-update
+    rev: v0.8.0
+    hooks:
+      - id: pre-commit-update
+        name: Check for pre-commit hooks updates
+        entry: sh -c 'pre-commit-update --dry-run || echo "[WARNING] Pre-commit hooks are outdated, please update them with \`pre-commit autoupdate\` in a separate git commit/pull request."'
+        verbose: true
