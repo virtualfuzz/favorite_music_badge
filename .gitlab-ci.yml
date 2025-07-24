@@ -8,7 +8,7 @@ update_badge_codeberg:
   environment:
     name: update_badge_codeberg
 
-  image: alpine/git:latest
+  image: alpine:latest
 
   variables:
     GIT_BOT_USERNAME: "favorite_music_badge_bot"
