@@ -18,8 +18,11 @@ update_badge_codeberg:
     README_FILENAME: "README.md"
 
   script:
+    # install and setup dependencies
+    - apk add openssh git go chromium
+    - export PATH=$PATH:/usr/local/go/bin:~/go/bin
+
     # load ssh key
-    - apk add openssh
     - mkdir ~/.ssh
     - echo "$SSH_KEY" | base64 -d > ~/.ssh/gitlab-cicd
     - chmod 400 ~/.ssh/gitlab-cicd
@@ -30,13 +33,6 @@ update_badge_codeberg:
     - ssh-keyscan -t rsa "$GIT_HOST" >> ~/.ssh/known_hosts
     - git config --global user.email "$GIT_EMAIL_BOT"
     - git config --global user.name "$GIT_BOT_USERNAME"
-
-    # install go
-    - apk add go
-
-    # install chromium
-    - apk add chromium
-    - export PATH=$PATH:/usr/local/go/bin:~/go/bin
 
     # get go program
     - go install codeberg.org/virtualfuzz/favorite_music_badge@v0.0.1
