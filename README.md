@@ -2,6 +2,8 @@
 
 # favorite music badge
 
+Preview at [https://codeberg.org/virtualfuzz](https://codeberg.org/virtualfuzz)
+
 Takes your favorite music from your youtube music account and displays it into
 your github/codeberg/gitlab readme!
 
