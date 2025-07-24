@@ -47,6 +47,8 @@ func main() {
 	fmt.Println(image_link)
 
 	if *repository != "" {
+		fmt.Println("The image link has been generated we are now downloading the repository and adding the favorite_music_badge to it!")
+
 		// Clone the repository
 		clone := exec.Command("git", "clone", *repository, REPOSITORY_DIR)
 		clone.Stderr = os.Stderr
@@ -310,6 +312,8 @@ func GetFavoriteFromChannelId(channel_id string, user_agent string, timeout time
 		err = errors.New("Attribute 'href' not found in the \"a\" tag.")
 	}
 
+	name = strings.ReplaceAll(name, "(Official Video)", "")
+	name = strings.TrimSpace(name)
 	music_link = "https://youtube.com/" + music_link
 	return
 }
