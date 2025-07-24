@@ -3,15 +3,17 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/chromedp/chromedp"
 )
 
 // Timeout for scraping the favorite music
-const TIMEOUT = 60 * time.Second
+const VERSION = "v0.0.1"
 
 type ScraperState uint8
 
@@ -22,9 +24,14 @@ const (
 )
 
 func main() {
+	channel_id, user_agent, timeout, err := parseCommandLineArgs()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	fmt.Println("Please make sure that \"Enable public stats\" is enabled in your youtube music channel settings.")
-	fmt.Printf("Currently fetching the favorite music, this might take a bit long... (Timeout of %v)\n", TIMEOUT)
-	name, link, author, err := GetFavoriteFromChannelId("")
+	fmt.Printf("Currently fetching the favorite music, this might take a bit long... (Timeout of %v)\n", timeout)
+	name, link, author, err := GetFavoriteFromChannelId(channel_id, *user_agent, timeout)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,14 +39,54 @@ func main() {
 	fmt.Println(name, link, author)
 }
 
+// Parse command line arguments and the flags
+func parseCommandLineArgs() (channel_id string, user_agent *string, timeout time.Duration, err error) {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] CHANNEL_ID\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Version: %s\n", VERSION)
+		fmt.Fprintf(os.Stderr, "This creates a badge that shows your favorite music in youtube music.\n")
+		flag.PrintDefaults()
+	}
+
+	// Set up the possible flags and arguments that can be passed
+	user_agent = flag.String("user-agent", "Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0", "User agent used while fetching the favorite music. Do not modify this if it already works.")
+	timeout_flag := flag.String("timeout", "60s", "Timeout before we stop trying to fetch the favorite music.")
+	help := flag.Bool("help", false, "Display help information")
+	helpShort := flag.Bool("h", false, "Display help information")
+	flag.Parse()
+
+	// Convert the timeout to an actual timeout and return an error on failure
+	timeout, err = time.ParseDuration(*timeout_flag)
+	if err != nil {
+		log.Print("While parsing the timeout flag (did you write the durationc correctly?)")
+		return
+	}
+
+	if *help || *helpShort {
+		flag.Usage()
+		return
+	}
+
+	// Get the channel id from the args
+	if len(flag.Args()) != 1 {
+		log.Print("Exactly one channel_id needs to be supplied.")
+		log.Print("Please note that channel_id must be passed in last.")
+		flag.Usage()
+		os.Exit(64)
+	}
+	channel_id = flag.Args()[0]
+
+	return
+}
+
 // Get the first favorite music from that youtube music channel
 // Expects that "Enable public stats" is enabled for the youtube channel, otherwise it won't work and will hit the timeout
-func GetFavoriteFromChannelId(channel_id string) (name string, music_link string, author string, err error) {
+func GetFavoriteFromChannelId(channel_id string, user_agent string, timeout time.Duration) (name string, music_link string, author string, err error) {
 	// Set language to english since we expect to get the english youtube music
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.Flag("lang", "en"),
 		chromedp.Env("LANG=en"),
-		chromedp.UserAgent("Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0"),
+		chromedp.UserAgent(user_agent),
 	)
 
 	// Create a context with a timeout of 10 seconds
@@ -47,7 +94,7 @@ func GetFavoriteFromChannelId(channel_id string) (name string, music_link string
 	defer acancel()
 	bctx, bcancel := chromedp.NewContext(actx)
 	defer bcancel()
-	ctx, cancel := context.WithTimeout(bctx, TIMEOUT)
+	ctx, cancel := context.WithTimeout(bctx, timeout)
 	defer cancel()
 
 	// Set the ok value to true to prevent the href error from overwriting the real one
