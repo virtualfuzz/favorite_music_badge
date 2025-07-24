@@ -19,7 +19,6 @@ update_badge_codeberg:
 
   script:
     # load ssh key
-    - apk
     - mkdir ~/.ssh
     - echo "$SSH_KEY" | base64 -d > ~/.ssh/gitlab-cicd
     - chmod 400 ~/.ssh/gitlab-cicd
@@ -32,14 +31,11 @@ update_badge_codeberg:
     - git config --global user.name "$GIT_BOT_USERNAME"
 
     # install go
-    - curl https://dl.google.com/go/go1.24.5.linux-amd64.tar.gz -o go1.24.5.linux-amd64.tar.gz
-    - tar -C /usr/local -xzf go1.24.5.linux-amd64.tar.gz
+    - apk add go
 
     # install chromium
-    - git clone https://github.com/scheib/chromium-latest-linux.git
-    - chromium-latest-linux/update.sh
-    - mv chromium-latest-linux ~/chromium-latest-linux
-    - export PATH=$PATH:/usr/local/go/bin:~/go/bin:~/chromium-latest-linux/latest
+    - apk add chromium
+    - export PATH=$PATH:/usr/local/go/bin:~/go/bin
 
     # get go program
     - go install codeberg.org/virtualfuzz/favorite_music_badge@v0.0.1
