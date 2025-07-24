@@ -5,6 +5,9 @@ stages:
 update_badge_codeberg:
   stage: deploy
 
+  environment:
+    name: update_badge_codeberg
+
   image: bitnami/git:latest
 
   variables:
