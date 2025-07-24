@@ -1,0 +1,35 @@
+name: Update
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # runs every day
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: alpine-latest
+    steps:
+      - name: Install dependencies and run it
+        run: |
+          # install and setup dependencies
+          - apk add openssh git go chromium
+          - export PATH=$PATH:/usr/local/go/bin:~/go/bin
+
+          # load ssh key
+          - mkdir ~/.ssh
+          - echo "$SSH_KEY" | base64 -d > ~/.ssh/gitlab-cicd
+          - chmod 400 ~/.ssh/gitlab-cicd
+          - eval "$(ssh-agent -s)"
+          - ssh-add ~/.ssh/gitlab-cicd
+
+          # configure git
+          - ssh-keyscan -t rsa "$GIT_HOST" >> ~/.ssh/known_hosts
+          - git config --global user.email "$GIT_EMAIL_BOT"
+          - git config --global user.name "$GIT_BOT_USERNAME"
+
+          # get go program
+          - go install codeberg.org/virtualfuzz/favorite_music_badge@v0.1.0
+          - favorite_music_badge -repository "$REPOSITORY" -filename "$README_FILENAME" "$CHANNEL_ID"
