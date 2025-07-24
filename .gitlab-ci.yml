@@ -14,7 +14,7 @@ update_badge_codeberg:
     GIT_BOT_USERNAME: "favorite_music_badge_bot"
     GIT_HOST: "codeberg.org"
     CHANNEL_ID: "UCB3TKqt3XsvwZPeFw5skSjA"
-    REPOSITORY: "https://codeberg.org/virtualfuzz/ylang"
+    REPOSITORY: "https://codeberg.org/virtualfuzz/.profile"
     README_FILENAME: "README.md"
 
   script:
