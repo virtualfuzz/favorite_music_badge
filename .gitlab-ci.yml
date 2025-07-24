@@ -8,7 +8,7 @@ update_badge_codeberg:
   environment:
     name: update_badge_codeberg
 
-  image: bitnami/git:latest
+  image: alpine/git:latest
 
   variables:
     GIT_BOT_USERNAME: "favorite_music_badge_bot"
@@ -19,6 +19,7 @@ update_badge_codeberg:
 
   script:
     # load ssh key
+    - apk
     - mkdir ~/.ssh
     - echo "$SSH_KEY" | base64 -d > ~/.ssh/gitlab-cicd
     - chmod 400 ~/.ssh/gitlab-cicd
