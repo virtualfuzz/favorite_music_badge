@@ -1,0 +1,33 @@
+# run every 2 day (we dontneed it to be updated too fast
+stages:
+  - deploy
+
+update_badge_codeberg:
+  stage: deploy
+
+  image: bitnami/git:latest
+
+  variables:
+    GIT_BOT_USERNAME: "favorite_music_badge_bot"
+    GIT_HOST: "codeberg.org"
+    CHANNEL_ID: "UCB3TKqt3XsvwZPeFw5skSjA"
+    REPOSITORY: "https://codeberg.org/virtualfuzz/ylang"
+    README_FILENAME: "README.md"
+
+  script:
+    # load ssh key
+    - chmod 400 "$SSH_KEY"
+    - mkdir ~/.ssh
+    - cat "$SSH_KEY" | base64 -d > ~/.ssh/gitlab-cicd
+    - chmod 400 ~/.ssh/gitlab-cicd
+    - eval "$(ssh-agent -s)"
+    - ssh-add ~/.ssh/gitlab-cicd
+
+    # configure git
+    - ssh-keyscan -t rsa "$GIT_HOST" >> ~/.ssh/known_hosts
+    - git config --global user.email "$GIT_EMAIL_BOT"
+    - git config --global user.name "$GIT_BOT_USERNAME"
+
+    # get go program
+    - go install codeberg.org/virtualfuzz/favorite_music_badge@v0.0.1
+    - favorite_music_badge -repository "$REPOSITORY" -filename "$README_FILENAME" "$CHANNEL_ID"
