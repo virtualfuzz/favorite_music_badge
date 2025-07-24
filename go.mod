@@ -1,6 +1,6 @@
 module codeberg.org/virtualfuzz/favorite_music_badge
 
-go 1.24.5
+go 1.24.4
 
 require github.com/chromedp/chromedp v0.13.7
 
