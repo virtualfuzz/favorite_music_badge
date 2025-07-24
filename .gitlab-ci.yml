@@ -19,6 +19,7 @@ update_badge_codeberg:
 
   script:
     # load ssh key
+    - apk add openssh
     - mkdir ~/.ssh
     - echo "$SSH_KEY" | base64 -d > ~/.ssh/gitlab-cicd
     - chmod 400 ~/.ssh/gitlab-cicd
