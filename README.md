@@ -32,7 +32,7 @@ with the new favorite music obtained from the channel.\
 
 Please note that when updating, we need to find a
 "FAVORITE_MUSIC_BADGE_AFTER_THIS_LINE", this tells where the favorite music
-badge will show up in the readme, the next line after that string will be
+[<img src="https://img.shields.io/badge/Favorite%20music-Fils%20de%20joie%20by%20Stromae-mistyrose?style=for-the-badge&logo=youtube-music&labelColor=darkred&"/>](https://youtube.com/watch?v=M7Z2tgJo8Hg)
 overwritten with the music badge.
 
 ## CICD/automatically updating
