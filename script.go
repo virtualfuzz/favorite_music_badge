@@ -16,7 +16,7 @@ import (
 )
 
 // Timeout for scraping the favorite music
-const VERSION = "v0.1.0"
+const VERSION = "v1.0.0"
 const REPOSITORY_DIR = "./repository_to_modify/"
 
 type ScraperState uint8
@@ -129,23 +129,40 @@ func main() {
 		}
 		fmt.Println(string(output))
 
-		// Create a git commit
-		commit := exec.Command("git", "--git-dir", REPOSITORY_DIR + ".git", "--work-tree", REPOSITORY_DIR, "commit", "-m", "feat: updated favorite_music_badge")
-		commit.Stderr = os.Stderr
-		output, err = commit.Output()
+		git_diff := exec.Command("git",  "--git-dir", REPOSITORY_DIR + ".git", "--work-tree", REPOSITORY_DIR, "diff-index", "--quiet", "HEAD", "--")
+		git_diff.Stderr = os.Stderr
+		output, err = git_diff.Output()
 		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println(string(output))
+			// Command failed; Files have been changed, do a git commit
 
-		// Git push the commit
-		push := exec.Command("git", "--git-dir", REPOSITORY_DIR + ".git", "--work-tree", REPOSITORY_DIR, "push")
-		push.Stderr = os.Stderr
-		output, err = push.Output()
+			// Create a git commit
+			commit := exec.Command("git", "--git-dir", REPOSITORY_DIR + ".git", "--work-tree", REPOSITORY_DIR, "commit", "-m", "feat: updated favorite_music_badge")
+			commit.Stderr = os.Stderr
+			output, err = commit.Output()
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println(string(output))
+
+			// Git push the commit
+			push := exec.Command("git", "--git-dir", REPOSITORY_DIR + ".git", "--work-tree", REPOSITORY_DIR, "push")
+			push.Stderr = os.Stderr
+			output, err = push.Output()
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println(string(output))
+		} else {
+			fmt.Println("Nothing has changed, same favorite music.")
+		}
+
+		remove_repository_to_modify := exec.Command("rm", "-rf", "./repository_to_modify")
+		remove_repository_to_modify.Stderr= os.Stderr
+		output, err = remove_repository_to_modify.Output()
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(string(output))
+		fmt.Println("Removed repository_to_modify")
 	}
 }
 
