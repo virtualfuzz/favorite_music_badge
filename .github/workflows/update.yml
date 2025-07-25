@@ -31,5 +31,5 @@ jobs:
           - git config --global user.name "$GIT_BOT_USERNAME"
 
           # get go program
-          - go install codeberg.org/virtualfuzz/favorite_music_badge@v0.1.0
+          - go install codeberg.org/virtualfuzz/favorite_music_badge@latest
           - favorite_music_badge -repository "$REPOSITORY" -filename "$README_FILENAME" "$CHANNEL_ID"
