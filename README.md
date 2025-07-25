@@ -32,8 +32,12 @@ with the new favorite music obtained from the channel.\
 
 Please note that when updating, we need to find a
 "FAVORITE_MUSIC_BADGE_AFTER_THIS_LINE", this tells where the favorite music
-[<img src="https://img.shields.io/badge/Favorite%20music-Fils%20de%20joie%20by%20Stromae-mistyrose?style=for-the-badge&logo=youtube-music&labelColor=darkred&"/>](https://youtube.com/watch?v=M7Z2tgJo8Hg)
+badge will show up in the readme, the next line after that string will be
 overwritten with the music badge.
+
+Fun fact: I accidentally run favorite_music_badge on the README.md of this repo
+and it changed it
+[commit](https://codeberg.org/virtualfuzz/favorite_music_badge/commit/f8daa8c266a96a763affc9c0ee7a94f2fc800a51)
 
 ## CICD/automatically updating
 
