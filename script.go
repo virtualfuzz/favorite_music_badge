@@ -137,7 +137,7 @@ func AddImageToRepository(repository string, filename string, image_link string,
 			add_youtube_music_badge = false
 			added_youtube_music_badge = true
 			if video_link != "" {
-				line = fmt.Sprintf("[<img src=\"%v\"/> alt=\"Favorite music badge\"](%v)", image_link, video_link)
+				line = fmt.Sprintf("[<img src=\"%v\" alt=\"Favorite music badge\"/>](%v)", image_link, video_link)
 			} else {
 				line = fmt.Sprintf("![Favorite music badge](%v)", image_link)
 			}
@@ -153,7 +153,7 @@ func AddImageToRepository(repository string, filename string, image_link string,
 		add_youtube_music_badge = false
 		added_youtube_music_badge = true
 		if video_link != "" {
-			lines = append(lines, fmt.Sprintf("[<img src=\"%v\"/> alt=\"Favorite music badge\"](%v)", image_link, video_link))
+			lines = append(lines, fmt.Sprintf("[<img src=\"%v\" alt=\"Favorite music badge\"/>](%v)", image_link, video_link))
 		} else {
 			lines = append(lines, fmt.Sprintf("![Favorite music badge](%v)", image_link))
 		}
