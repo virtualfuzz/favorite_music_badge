@@ -26,3 +26,7 @@
 ## v1.1.1
 
 - fix: dont fail if .env cannot be loaded
+
+## v1.1.2
+
+- fix: images getting generated incorrectly in markdown
