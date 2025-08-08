@@ -30,7 +30,7 @@ jobs:
           export PATH=$PATH:/usr/local/go/bin:~/go/bin
 
           mkdir ~/.ssh
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/gitlab-cicd
+          echo "${{ secrets.SSH_KEY }}" | base64 -d > ~/.ssh/gitlab-cicd
           chmod 400 ~/.ssh/gitlab-cicd
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/gitlab-cicd
