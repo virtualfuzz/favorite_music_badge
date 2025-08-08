@@ -28,7 +28,8 @@ update_badge_codeberg:
     - apk add openssh git go chromium
     - export PATH=$PATH:/usr/local/go/bin:~/go/bin
 
-    # load ssh key
+    # ssh key secret is base64 encoded so that gitlab cicd can
+    # catch it if it is accidentally printed
     - mkdir ~/.ssh
     - echo "$SSH_KEY" | base64 -d > ~/.ssh/gitlab-cicd
     - chmod 400 ~/.ssh/gitlab-cicd
