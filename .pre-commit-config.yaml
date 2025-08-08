@@ -16,7 +16,7 @@ repos:
         language: node # Not really using node, but otherwise it fails
         additional_dependencies: ["dprint"]
   - repo: https://github.com/adhtruong/mirrors-typos
-    rev: v1.34.0
+    rev: v1.35.1
     hooks:
       - id: typos
         name: Check for typos in all files
