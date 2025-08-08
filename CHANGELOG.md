@@ -30,3 +30,7 @@
 ## v1.1.2
 
 - fix: images getting generated incorrectly in markdown
+
+## v1.1.3
+
+- fix: fix safe url not escaping -, which made image urls fail
