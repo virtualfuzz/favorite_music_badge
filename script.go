@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/chromedp/chromedp"
+	"github.com/joho/godotenv"
 )
 
 // Timeout for scraping the favorite music
@@ -31,6 +32,11 @@ const (
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	providers, user_agent, timeout, message_color, style, logo, logoColor, logoSize, labelColor, color, cacheSeconds, repository, filename, err := parseCommandLineArgs()
 	if err != nil {
 		log.Fatal(err)
