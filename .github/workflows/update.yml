@@ -10,26 +10,35 @@ permissions:
 
 jobs:
   update:
-    runs-on: alpine-latest
+    runs-on: ubuntu-latest
+    env:
+      GIT_BOT_USERNAME: "favorite_music_badge_bot"
+      GIT_HOST: "codeberg.org"
+      YOUTUBE_CHANNEL_ID: "UCB3TKqt3XsvwZPeFw5skSjA"
+      LAST_FM_USERNAME: "chimpanzeebee"
+      LISTENBRAINZ_USERNAME: "TravelNerd"
+      # Youtube is going to fail anyway, however this can be used as an example
+      FALLBACK: "lastfm,listenbrainz,youtube"
+      # ssh is used since we can just use a password ssh key and don't need any user input
+      # http(s) can also work but you will need to write your password and your git provider should support it for push
+      REPOSITORY: "ssh://git@codeberg.org/virtualfuzz/.profile.git"
+      README_FILENAME: "README.md"
+
     steps:
       - name: Install dependencies and run it
         run: |
-          # install and setup dependencies
-          - apk add openssh git go chromium
+          #- apk add openssh git go chromium
           - export PATH=$PATH:/usr/local/go/bin:~/go/bin
 
-          # load ssh key
           - mkdir ~/.ssh
           - echo "$SSH_KEY" | base64 -d > ~/.ssh/gitlab-cicd
           - chmod 400 ~/.ssh/gitlab-cicd
           - eval "$(ssh-agent -s)"
           - ssh-add ~/.ssh/gitlab-cicd
 
-          # configure git
           - ssh-keyscan -t rsa "$GIT_HOST" >> ~/.ssh/known_hosts
           - git config --global user.email "$GIT_EMAIL_BOT"
           - git config --global user.name "$GIT_BOT_USERNAME"
 
-          # get go program
           - go install codeberg.org/virtualfuzz/favorite_music_badge@latest
-          - favorite_music_badge -repository "$REPOSITORY" -filename "$README_FILENAME" "$CHANNEL_ID"
+          - LAST_FM_API_KEY="$LAST_FM_API_KEY" favorite_music_badge -repository "$REPOSITORY" -filename "$README_FILENAME" -lastFmUsername "$LAST_FM_USERNAME" -youtubeChannelId "$YOUTUBE_CHANNEL_ID" -listenbrainzUsername "$LISTENBRAINZ_USERNAME" -fallback "$FALLBACK"
