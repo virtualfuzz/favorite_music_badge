@@ -32,10 +32,7 @@ const (
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	godotenv.Load()
 
 	providers, user_agent, timeout, message_color, style, logo, logoColor, logoSize, labelColor, color, cacheSeconds, repository, filename, err := parseCommandLineArgs()
 	if err != nil {
