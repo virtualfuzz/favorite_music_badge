@@ -27,7 +27,6 @@ jobs:
     steps:
       - name: Install dependencies and run it
         run: |
-          #- apk add openssh git go chromium
           - export PATH=$PATH:/usr/local/go/bin:~/go/bin
 
           - mkdir ~/.ssh
