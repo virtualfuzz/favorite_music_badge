@@ -18,7 +18,9 @@ update_badge_codeberg:
     LISTENBRAINZ_USERNAME: "TravelNerd"
     # Youtube is going to fail anyway, however this can be used as an example
     FALLBACK: "lastfm,listenbrainz,youtube"
-    REPOSITORY: "https://codeberg.org/virtualfuzz/.profile"
+    # ssh is used since we can just use a password ssh key and don't need any user input
+    # http(s) can also work but you will need to write your password and your git provider should support it for push
+    REPOSITORY: "ssh://git@codeberg.org/virtualfuzz/favorite_music_badge.git"
     README_FILENAME: "README.md"
 
   script:
