@@ -25,9 +25,9 @@ const REPOSITORY_DIR = "./repository_to_modify/"
 type ScraperState uint8
 
 const (
-	LoadingChannel        ScraperState = 0
-	DenyingCookies        ScraperState = 1
-	ScrapingFavoriteMusic ScraperState = 2
+	LoadingChannel ScraperState = iota
+	DenyingCookies
+	ScrapingFavoriteMusic
 )
 
 func main() {
@@ -37,11 +37,18 @@ func main() {
 	}
 
 	// Fetch the favorite music
-	name, song_link, author := get_favorite_from_provider(providers, user_agent, timeout)
+	name, song_link, author, err := get_favorite_from_provider(providers, user_agent, timeout)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Create a link of it as an image
 	image_link := Generate_image_link(name, author, message_color, style, logo, logoColor, logoSize, labelColor, color, cacheSeconds)
-	fmt.Printf("Favorite music: %v by %v (%v)\n", name, author, song_link)
+	if song_link != "" {
+		fmt.Printf("Favorite music: %v by %v ( %v )\n", name, author, song_link)
+	} else {
+		fmt.Printf("Favorite music: %v by %v ( no song link found )\n", name, author)
+	}
 	fmt.Println(image_link)
 
 	if repository != "" {
@@ -55,8 +62,7 @@ func main() {
 
 // Get the favorite music from a list of providers, we try the first provider,
 // then the second, etc.
-func get_favorite_from_provider(providers []Provider, user_agent string, timeout time.Duration) (name string, song_link string, author string) {
-	var err error
+func get_favorite_from_provider(providers []Provider, user_agent string, timeout time.Duration) (name string, song_link string, author string, err error) {
 	for i := range providers {
 		switch providers[i].Type {
 		case Youtube:
@@ -79,9 +85,19 @@ func get_favorite_from_provider(providers []Provider, user_agent string, timeout
 			} else {
 				return
 			}
+		case Listenbrainz:
+			fmt.Println("Fetching top song from listenbrainz...")
+			name, song_link, author, err = GetListenbrainzPinnedRecording(providers[i].ListenbrainzUsername)
+			if err != nil {
+				log.Print(err)
+				log.Print("Failed to fetch from listenbrainz")
+			} else {
+				return
+			}
 		}
 	}
 
+	err = errors.New("Failed to fetch from all providers...")
 	return
 }
 
@@ -109,6 +125,7 @@ func AddImageToRepository(repository string, filename string, image_link string,
 	added_youtube_music_badge := false
 
 	// Should we add a youtube music badge now
+	// Loop through each line, if we find FAVORITE_MUSIC_BADGE_AFTER_THIS_LINE, we add the youtube music badge on the next line
 	add_youtube_music_badge := false
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -116,7 +133,11 @@ func AddImageToRepository(repository string, filename string, image_link string,
 		if add_youtube_music_badge {
 			add_youtube_music_badge = false
 			added_youtube_music_badge = true
-			line = fmt.Sprintf("[<img src=\"%v\"/>](%v)", image_link, video_link)
+			if video_link != "" {
+				line = fmt.Sprintf("[<img src=\"%v\"/> alt=\"Favorite music badge\"](%v)", image_link, video_link)
+			} else {
+				line = fmt.Sprintf("![Favorite music badge](%v)", image_link)
+			}
 		} else if strings.Contains(line, "FAVORITE_MUSIC_BADGE_AFTER_THIS_LINE") {
 			add_youtube_music_badge = true
 		}
@@ -124,10 +145,15 @@ func AddImageToRepository(repository string, filename string, image_link string,
 		lines = append(lines, line)
 	}
 
+	// Workaround if the FAVORITE_MUSIC_BADGE_AFTER_THIS_LINE is on the last line
 	if add_youtube_music_badge {
 		add_youtube_music_badge = false
 		added_youtube_music_badge = true
-		lines = append(lines, fmt.Sprintf("[<img src=\"%v\"/>](%v)", image_link, video_link))
+		if video_link != "" {
+			lines = append(lines, fmt.Sprintf("[<img src=\"%v\"/> alt=\"Favorite music badge\"](%v)", image_link, video_link))
+		} else {
+			lines = append(lines, fmt.Sprintf("![Favorite music badge](%v)", image_link))
+		}
 	}
 
 	if added_youtube_music_badge == false {
@@ -250,17 +276,19 @@ func Generate_image_link(name string, author string, message_color string, style
 type ProviderType string
 
 const (
-	Youtube ProviderType = "youtube"
-	LastFm  ProviderType = "lastfm"
+	Youtube      ProviderType = "youtube"
+	LastFm       ProviderType = "lastfm"
+	Listenbrainz ProviderType = "listenbrainz"
 )
 
 // A provider with a type and specific fields
 type Provider struct {
-	Type             ProviderType
-	YoutubeChannelId string
-	LastFmUsername   string
-	LastFmAPIKey     string
-	LastFmPeriod     string
+	Type                 ProviderType
+	YoutubeChannelId     string
+	LastFmUsername       string
+	LastFmAPIKey         string
+	LastFmPeriod         string
+	ListenbrainzUsername string
 }
 
 // Parse command line arguments and the flags
@@ -302,6 +330,8 @@ func parseCommandLineArgs() (providers []Provider, userAgent string, timeout tim
 	flag.StringVar(&lastFmUsername, "lastFmUsername", "", "Last.fm username where we get the top song from.")
 	var lastFmPeriod string
 	flag.StringVar(&lastFmPeriod, "lastFmPeriod", "7day", "Last.fm period over which to retrieve top tracks for.")
+	var listenbrainzUsername string
+	flag.StringVar(&listenbrainzUsername, "listenbrainzUsername", "", "Listenbrainz username where we get the latest pinned song from.")
 	var lastFmAPIKey string
 	lastFmAPIKey = os.Getenv("LAST_FM_API_KEY")
 	var fallback string
@@ -351,14 +381,18 @@ func parseCommandLineArgs() (providers []Provider, userAgent string, timeout tim
 		providers = append(providers, Provider{Type: Youtube, YoutubeChannelId: youtubeChannelId})
 	}
 
-	if lastFmUsername == "" && youtubeChannelId == "" {
-		log.Print("[ERROR] A last.fm username (--lastFmUsername and --lastFmAPIKey) or a youtube channel id (--youtubeChannelId) must be given, we have no idea where to take the favorite music from!")
+	if lastFmUsername == "" && youtubeChannelId == "" && listenbrainzUsername == "" {
+		log.Print("[ERROR] A last.fm username (--lastFmUsername and --lastFmAPIKey) or a youtube channel id (--youtubeChannelId), or a listenbrainz username (--listenbrainzUsername) must be given, we have no idea where to take the favorite music from!")
 		flag.Usage()
 		os.Exit(64)
 	}
 
 	if lastFmUsername != "" {
 		providers = append(providers, Provider{Type: LastFm, LastFmUsername: lastFmUsername, LastFmAPIKey: lastFmAPIKey, LastFmPeriod: lastFmPeriod})
+	}
+
+	if listenbrainzUsername != "" {
+		providers = append(providers, Provider{Type: Listenbrainz, ListenbrainzUsername: listenbrainzUsername})
 	}
 
 	fallback_order := strings.Split(fallback, ",")
@@ -370,6 +404,8 @@ func parseCommandLineArgs() (providers []Provider, userAgent string, timeout tim
 					moveProviderToIndex(providers, Youtube, i)
 				case string(LastFm):
 					moveProviderToIndex(providers, LastFm, i)
+				case string(Listenbrainz):
+					moveProviderToIndex(providers, Listenbrainz, i)
 				default:
 					log.Printf("[ERROR] Unknown provider passed, \"%v\" is an unknown provider. \"youtube\" and \"lastfm\" are all valid providers.\n", fallback_order[i])
 					flag.Usage()
@@ -422,12 +458,8 @@ type LastFMTopTracks struct {
 	TopTracks TopTracks `json:"toptracks"`
 }
 
-// Get the top song from the lastfm API, would work inside of cicd
-//
-// API documentation: https://www.last.fm/api/show/user.getTopTracks
-func GetTopSongFromLastFm(user string, period string, api_key string) (name string, music_link string, author string, err error) {
-	request := fmt.Sprintf("http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=%v&period=%v&api_key=%v&limit=1&format=json", user, period, api_key)
-
+// Send a GET request to the URL with, expects a STATUS_OK, and decodes the v as json.
+func sendRequestAndParseJSON(request string, error_message_link string, v any) (err error) {
 	resp, err := http.Get(request)
 	if err != nil {
 		return
@@ -444,13 +476,110 @@ func GetTopSongFromLastFm(user string, period string, api_key string) (name stri
 			log.Println(err)
 		}
 
-		log.Println("Get the corresponding error number from https://www.last.fm/api/show/user.getTopTracks")
+		log.Printf("Get the corresponding error number from %v\n", error_message_link)
 		err = errors.New(fmt.Sprint("Request failed with status:", resp.Status))
 		return
 	}
 
+	err = json.NewDecoder(resp.Body).Decode(&v)
+	return
+}
+
+type ListenbrainzPinnedRecordings struct {
+	PinnedRecordings []PinnedRecording `json:"pinned_recordings"`
+}
+
+type PinnedRecording struct {
+	Created       int           `json:"created"`
+	RecordingMsid string        `json:"recording_msid"`
+	TrackMetadata TrackMetadata `json:"track_metadata"`
+}
+
+type ListenbrainzListens struct {
+	Payload Payload `json:"payload"`
+}
+
+type Payload struct {
+	Listens []Listen `json:"listens"`
+}
+
+type Listen struct {
+	RecordingMsid string        `json:"recording_msid"`
+	TrackMetadata TrackMetadata `json:"track_metadata"`
+}
+
+type TrackMetadata struct {
+	AdditionalInfo AdditionalInfo `json:"additional_info"`
+	MbidMapping    MbidMapping    `json:"mbid_mapping"`
+	ArtistName     string         `json:"artist_name"`
+	TrackName      string         `json:"track_name"`
+}
+
+type AdditionalInfo struct {
+	OriginUrl string `json:"origin_url"`
+}
+
+type MbidMapping struct {
+	RecordingMbid string `json:"recording_mbid"`
+}
+
+// Get the latest listenbrainz pinned recording
+// Does a request to https://api.listenbrainz.org/1/USERNAME/pins?count=1 to get the latest pinned recording
+// (even if it is expired, it will still take the latest)
+// Tries to get the recording_mbid from it and generate a music_link from it, otherwise,
+// we do another request to get the listens of that user and try to get the origin_url from there by comparing
+// the titles of the songs or the msid.
+func GetListenbrainzPinnedRecording(username string) (song_name string, music_link string, author string, err error) {
+	request := fmt.Sprintf("https://api.listenbrainz.org/1/%v/pins?count=1", username)
+
+	var pinnedRecording ListenbrainzPinnedRecordings
+	err = sendRequestAndParseJSON(request, "https://listenbrainz.readthedocs.io/en/latest/users/api/recordings.html#get--1-(user_name)-pins", &pinnedRecording)
+	if err != nil {
+		return
+	}
+	pin := pinnedRecording.PinnedRecordings[0]
+	song_name = pin.TrackMetadata.TrackName
+	author = pin.TrackMetadata.ArtistName
+
+	// If we already have a recording_mbid, use it to generate a music link and return there
+	if pin.TrackMetadata.MbidMapping.RecordingMbid != "" {
+		music_link = fmt.Sprintf("https://listenbrainz.org/track/%v", pin.TrackMetadata.MbidMapping.RecordingMbid)
+		return
+	}
+
+	request = fmt.Sprintf("https://api.listenbrainz.org/1/user/%v/listens?max_ts=%v&count=200", username, pin.Created+(60*60)) // Add 1 hour to the max_ts to have some headroom
+
+	var listens ListenbrainzListens
+	err = sendRequestAndParseJSON(request, "https://listenbrainz.readthedocs.io/en/latest/users/api/core.html#get--1-user-(user_name)-listens", &listens)
+	if err != nil {
+		return
+	}
+
+	for i := range listens.Payload.Listens {
+		listen := listens.Payload.Listens[i]
+		// Try to get the music link by finding the same msid, and as a fallback
+		// check for the same trackname/artistname
+		if listen.RecordingMsid == pin.RecordingMsid {
+			music_link = listen.TrackMetadata.AdditionalInfo.OriginUrl
+			break
+		} else if strings.EqualFold(listen.TrackMetadata.TrackName, pin.TrackMetadata.TrackName) && strings.EqualFold(listen.TrackMetadata.ArtistName, pin.TrackMetadata.ArtistName) {
+			music_link = listen.TrackMetadata.AdditionalInfo.OriginUrl
+			break
+		}
+	}
+
+	return
+}
+
+// Get the top song from the lastfm API, would work inside of cicd
+//
+// API documentation: https://www.last.fm/api/show/user.getTopTracks
+func GetTopSongFromLastFm(user string, period string, api_key string) (name string, music_link string, author string, err error) {
+	request := fmt.Sprintf("http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=%v&period=%v&api_key=%v&limit=1&format=json", user, period, api_key)
+
 	var lastFMTopTracks LastFMTopTracks
-	if err = json.NewDecoder(resp.Body).Decode(&lastFMTopTracks); err != nil {
+	err = sendRequestAndParseJSON(request, "https://www.last.fm/api/show/user.getTopTracks", &lastFMTopTracks)
+	if err != nil {
 		return
 	}
 
