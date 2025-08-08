@@ -13,7 +13,11 @@ update_badge_codeberg:
   variables:
     GIT_BOT_USERNAME: "favorite_music_badge_bot"
     GIT_HOST: "codeberg.org"
-    CHANNEL_ID: "UCB3TKqt3XsvwZPeFw5skSjA"
+    YOUTUBE_CHANNEL_ID: "UCB3TKqt3XsvwZPeFw5skSjA"
+    LAST_FM_USERNAME: "chimpanzeebee"
+    LISTENBRAINZ_USERNAME: "TravelNerd"
+    # Youtube is going to fail anyway, however this can be used as an example
+    FALLBACK: "lastfm,listenbrainz,youtube"
     REPOSITORY: "https://codeberg.org/virtualfuzz/.profile"
     README_FILENAME: "README.md"
 
@@ -36,4 +40,4 @@ update_badge_codeberg:
 
     # get go program
     - go install codeberg.org/virtualfuzz/favorite_music_badge@latest
-    - favorite_music_badge -repository "$REPOSITORY" -filename "$README_FILENAME" "$CHANNEL_ID"
+    - LAST_FM_API_KEY="$LAST_FM_API_KEY" favorite_music_badge -repository "$REPOSITORY" -filename "$README_FILENAME" -lastFmUsername "$LAST_FM_USERNAME" -youtubeChannelId "$YOUTUBE_CHANNEL_ID" -listenbrainzUsername "$LISTENBRAINZ_USERNAME" -fallback "$FALLBACK"
