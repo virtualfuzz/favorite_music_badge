@@ -236,6 +236,7 @@ func safeUrl(str string) string {
 	str = strings.ReplaceAll(str, "&", "%26")
 	str = strings.ReplaceAll(str, "=", "%3D")
 	str = strings.ReplaceAll(str, "\\", "%5C")
+	str = strings.ReplaceAll(str, "-", "–")
 	return str
 }
 
