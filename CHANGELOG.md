@@ -15,3 +15,10 @@
 - add detailed documentation on how to run, how to use cicd, etc...
 - make it more robust to re-runs by deleting the folders it creates to prevent
   errors
+
+## v1.1.0
+
+- add support for last.fm and listenbrainz (suggestion request very cool)\
+  you can use multiple providers (lastfm, listenbrainz, youtube) to get the
+  favorite music from a custom order (set by --fallback) where we try to get the
+  first one, and if it fails we try the other ones
