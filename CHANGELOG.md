@@ -22,3 +22,7 @@
   you can use multiple providers (lastfm, listenbrainz, youtube) to get the
   favorite music from a custom order (set by --fallback) where we try to get the
   first one, and if it fails we try the other ones
+
+## v1.1.1
+
+- fix: dont fail if .env cannot be loaded
