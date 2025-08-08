@@ -27,17 +27,17 @@ jobs:
     steps:
       - name: Install dependencies and run it
         run: |
-          - export PATH=$PATH:/usr/local/go/bin:~/go/bin
+          export PATH=$PATH:/usr/local/go/bin:~/go/bin
 
-          - mkdir ~/.ssh
-          - echo "$SSH_KEY" | base64 -d > ~/.ssh/gitlab-cicd
-          - chmod 400 ~/.ssh/gitlab-cicd
-          - eval "$(ssh-agent -s)"
-          - ssh-add ~/.ssh/gitlab-cicd
+          mkdir ~/.ssh
+          echo "$SSH_KEY" | base64 -d > ~/.ssh/gitlab-cicd
+          chmod 400 ~/.ssh/gitlab-cicd
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/gitlab-cicd
 
-          - ssh-keyscan -t rsa "$GIT_HOST" >> ~/.ssh/known_hosts
-          - git config --global user.email "$GIT_EMAIL_BOT"
-          - git config --global user.name "$GIT_BOT_USERNAME"
+          ssh-keyscan -t rsa "$GIT_HOST" >> ~/.ssh/known_hosts
+          git config --global user.email "$GIT_EMAIL_BOT"
+          git config --global user.name "$GIT_BOT_USERNAME"
 
-          - go install codeberg.org/virtualfuzz/favorite_music_badge@latest
-          - LAST_FM_API_KEY="$LAST_FM_API_KEY" favorite_music_badge -repository "$REPOSITORY" -filename "$README_FILENAME" -lastFmUsername "$LAST_FM_USERNAME" -youtubeChannelId "$YOUTUBE_CHANNEL_ID" -listenbrainzUsername "$LISTENBRAINZ_USERNAME" -fallback "$FALLBACK"
+          go install codeberg.org/virtualfuzz/favorite_music_badge@latest
+          LAST_FM_API_KEY="$LAST_FM_API_KEY" favorite_music_badge -repository "$REPOSITORY" -filename "$README_FILENAME" -lastFmUsername "$LAST_FM_USERNAME" -youtubeChannelId "$YOUTUBE_CHANNEL_ID" -listenbrainzUsername "$LISTENBRAINZ_USERNAME" -fallback "$FALLBACK"
